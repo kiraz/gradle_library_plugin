@@ -8,7 +8,7 @@ def version = project.PUBLISH_VERSION
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def localDest = properties.getProperty('local.repo')
-def localReleaseDest = "${localDest}/release/${version}"
+def localReleaseDest = "${localDest}/repository"
 
 uploadArchives {
     repositories.mavenDeployer {
