@@ -8,7 +8,7 @@ def version = project.PUBLISH_VERSION
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def localDest = properties.getProperty('local.repo')
-def localReleaseDest = "${localDest}/repository"
+def localRepositoryDest = "${localDest}/repository"
 
 uploadArchives {
     repositories.mavenDeployer {
@@ -16,13 +16,54 @@ uploadArchives {
         pom.artifactId = artifactId
         pom.version = version
         // Add other pom properties here if you want (developer details / licenses)
-        repository(url: "file://${localReleaseDest}")
+        repository(url: "file://${localRepositoryDest}")
     }
 }
 
+/*
 task generateRelease << {
+    println rootProject.ext.PUBLISH_ARTIFACT_ID 
     println "Release ${version} can be found at ${localReleaseDest}/"
 }
 
 generateRelease.dependsOn(uploadArchives)
+*/
+
+
+task generateAll << {
+    //println "Release ${version} can be found at ${localRepositoryDest}/"
+    //doLast {
+/*
+        def String[] groupIdList = "${groupId}".split(".")
+        def String groupIdPath = ""
+        groupIdList { elem ->
+             groupIdPath = groupIdPath + "/" + elem    
+	}
+*/
+        //minus sign removes part of the string
+        File debugAarFile = file("${localRepositoryDest}/" + "com/ridemetric/"+ "${artifactId}/${version}/${artifactId}-${version}-debug.aar")
+        if (debugAarFile.exists()) {
+             debugAarFile.renameTo(file("${localRepositoryDest}/" + "com/ridemetric/"+ "${artifactId}/${version}/${artifactId}-${version}.aar"))
+        }
+    //}
+}
+
+generateAll.dependsOn(uploadArchives)
+
+
+/*
+android.buildTypes.all { buildType ->
+    
+    task ( "generate${buildType.name.capitalize()}" ) {
+        //dependsOn "prepareGenerate${buildType.name.capitalize()}"
+        dependsOn "uploadArchives"
+    }
+                                    	
+}
+*/
+/*
+task generateAll << {
+    println rootProject.ext.PUBLISH_ARTIFACT_ID
+}
+*/
 
