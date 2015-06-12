@@ -1,0 +1,42 @@
+apply plugin: 'maven'
+
+def groupId = project.PUBLISH_GROUP_ID
+def artifactIdVar = project.PUBLISH_ARTIFACT_ID
+def version = project.PUBLISH_VERSION
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def localDest = properties.getProperty('local.repo')
+def localRepositoryDest = "${localDest}/repository"
+
+afterEvaluate { project ->
+    task generateReleaseJavadoc {
+
+    }
+
+    // Generate Jar of the Javadoc
+    task androidJavadocsJar(type: Jar, dependsOn: generateReleaseJavadoc) {
+        classifier = 'javadoc'
+        //from generateReleaseJavadoc.destinationDir
+    }
+
+    // Include Javadoc Jar file in the Maven repository
+    artifacts {
+        archives androidJavadocsJar
+    }
+
+    // Task to upload SDK in Maven private repository
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                repository(url: "file://${localRepositoryDest}")
+
+                pom.project {
+                    artifactId artifactIdVar
+                    name 'commonlib'
+                    packaging 'aar'
+                }
+            }
+        }
+    }
+}

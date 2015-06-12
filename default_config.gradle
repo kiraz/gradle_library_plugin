@@ -1,0 +1,64 @@
+apply plugin: 'maven'
+
+//In order to run this task we have to set defaultPublishConfig to certain type in build.gradle script
+//before assembing the aar.
+//usage: gradlew clean build generateDefaultConfig
+
+def groupId = project.PUBLISH_GROUP_ID
+def artifactId = project.PUBLISH_ARTIFACT_ID
+def version = project.PUBLISH_VERSION
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def repoFolderName = "/repository"
+def localPublicRepo = properties.getProperty('local.repo') + repoFolderName
+def localPrivateRepo = properties.getProperty('local.private_repo') + repoFolderName
+
+uploadArchives {
+    repositories.mavenDeployer {
+        pom.groupId = groupId
+        pom.artifactId = project.PUBLISH_ARTIFACT_ID
+        pom.version = version
+        repository(url: "file://${localPublicRepo}")
+    }
+}
+
+//This script is not used for the following reasons:
+//according to defaultPublishConfig we determine the artifactId but this does not work
+//because this variable is used only during the settings of uploardArchives specified
+//above and we use the task below - prepareDefaultConfig to set artifactId
+
+android.buildTypes.all { buildType ->
+    task ("prepare${buildType.name.capitalize()}") << {
+        //android.defaultPublishConfig = "${buildType.name}"
+        if ("${buildType.name}" == "release") {
+            uploadArchives.repositories.mavenDeployer.pom.artifactId = project.PUBLISH_ARTIFACT_ID
+        } else {
+            uploadArchives.repositories.mavenDeployer.pom.artifactId = project.PUBLISH_ARTIFACT_ID + "-${buildType.name}"
+        }
+        if ("${buildType.minifyEnabled}" == "true") {
+            uploadArchives.repositories.mavenDeployer.repository.url = "file://${localPublicRepo}"
+        } else {
+            uploadArchives.repositories.mavenDeployer.repository.url = "file://${localPrivateRepo}"
+        }
+    }
+
+    task ("generate${buildType.name.capitalize()}") {
+        dependsOn "prepare${buildType.name.capitalize()}"
+        dependsOn uploadArchives
+    }
+}
+
+task prepareDefaultConfig << {
+    if (android.defaultPublishConfig == "release") {
+        uploadArchives.repositories.mavenDeployer.pom.artifactId = project.PUBLISH_ARTIFACT_ID
+        uploadArchives.repositories.mavenDeployer.repository.url = "file://${localPublicRepo}"
+    } else {
+        uploadArchives.repositories.mavenDeployer.pom.artifactId = project.PUBLISH_ARTIFACT_ID + "-" + android.defaultPublishConfig
+        uploadArchives.repositories.mavenDeployer.repository.url = "file://${localPrivateRepo}"
+    }
+}
+
+task generateDefaultConfig {
+    dependsOn prepareDefaultConfig, uploadArchives
+}
