@@ -8,18 +8,24 @@ def groupId = project.PUBLISH_GROUP_ID
 def artifactId = project.PUBLISH_ARTIFACT_ID
 def version = project.PUBLISH_VERSION
 
+/*
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def repoFolderName = "/repository"
 def localPublicRepo = properties.getProperty('local.repo') + repoFolderName
 def localPrivateRepo = properties.getProperty('local.private_repo') + repoFolderName
+*/
+
+def repoFolderName = "/repository"
+def localPublicRepo = "${System.env.RIDEMETRIC_LOCAL_REPO_HOME}/ridemetricPublicRepo" + repoFolderName
+def localPrivateRepo = "${System.env.RIDEMETRIC_LOCAL_REPO_HOME}/ridemetricPrivateRepo" + repoFolderName
 
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupId
         pom.artifactId = project.PUBLISH_ARTIFACT_ID
         pom.version = version
-        repository(url: "file://${localPublicRepo}")
+        repository(url: "file://${localPrivateRepo}")
     }
 }
 
@@ -30,7 +36,6 @@ uploadArchives {
 
 android.buildTypes.all { buildType ->
     task ("prepare${buildType.name.capitalize()}") << {
-        //android.defaultPublishConfig = "${buildType.name}"
         if ("${buildType.name}" == "release") {
             uploadArchives.repositories.mavenDeployer.pom.artifactId = project.PUBLISH_ARTIFACT_ID
         } else {
